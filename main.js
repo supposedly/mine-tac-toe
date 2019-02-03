@@ -10,6 +10,32 @@ const Clicks = Object.freeze({
   RIGHT: 2,
 });
 
+const MINESWEEPER_MSGS = [
+  "{name}'s a darmn minesleeper",
+  '{name} got SWEPT',
+  "{name}'s doing july 4th early this year",
+  'mine your own sweepwax, {name}',
+  'mine your swep, {name}',
+  "you don't deserve a minesweeper pun, {name}",
+];
+
+const TICTACTOE_MSGS = [
+  '{name} noughted one cross too many',
+  "{name} tic'd when they shoulda tac'd",
+  '{name} got tic-tac-told',
+  'tic tac go home, {name}',
+];
+const TICTACTOE_EXTRAS = {
+  O: [
+    'is this lOOOss, {name}?',
+    'R.K.O.O.O. outta nowhere, {name}!',
+  ],
+  X: [
+    "{name} got tentacion'd",
+    '{name} keeps it 30, like the romans',
+  ]
+}
+
 
 class Tile extends Phaser.GameObjects.Sprite {
   constructor(scene, x, y, texture) {
@@ -222,15 +248,17 @@ class Scene extends Phaser.Scene {
     this._setTurnText();
   }
 
-  gameWon(player) {
+  gameWon(player, messages) {
     // prolly better ways to choose random number sans one value
     const choices = Array.from({ length: this.playerCount }, (_, k) => k).splice(player, 1);
-    console.log(choices);
-    this.gameLost(choices[Math.floor(Math.random() * choices.length)]);
+    this.gameLost(choices[Math.floor(Math.random() * choices.length)], messages);
   }
 
-  gameLost(player) {
-    alert(`player ${player} is sucks !`);
+  gameLost(player, messages) {
+    alert(
+      messages[Math.floor(Math.random() * messages.length)]
+      .replace('{name}', `player ${player + 1}`)
+    );
   }
 
   ticTacToeWin(tile, length = 3, previousX = 0, previousY = 0, textureKey = null) {
@@ -253,7 +281,10 @@ class Scene extends Phaser.Scene {
           (previousX === 0 && previousY === 0)
           || (xOffset === previousX && yOffset === previousY)
         ) {
-          won = won || this.ticTacToeWin(neighbor, length - 1, xOffset, yOffset, textureKey);
+          won = won || (
+            this.ticTacToeWin(neighbor, length - 1, xOffset, yOffset, textureKey)
+            && tile.texture.key === textureKey
+          );
         }
       },
       () => won,
@@ -279,8 +310,10 @@ class Scene extends Phaser.Scene {
     if (valid) {
       tile.flag(this.currentPlayer);
       this.playerFlags[this.currentPlayer].decrement();
+      // XXX: below line is jaaaankkyyy
+      const xo = tile.texture.key.charAt(0).toUpperCase();
       if (this.ticTacToeWin(tile)) {
-        this.gameWon(this.currentPlayer);
+        this.gameWon(this.currentPlayer, TICTACTOE_MSGS.concat(TICTACTOE_EXTRAS[xo]));
       }
     }
     return valid;
@@ -308,7 +341,7 @@ class Scene extends Phaser.Scene {
       this.iterateMooreNeighborhood(tile.boardX, tile.boardY, this.uncover.bind(this));
     }
     if (oldState === -9) {
-      this.gameLost(this.currentPlayer);
+      this.gameLost(this.currentPlayer, MINESWEEPER_MSGS);
     }
     return true;
   }

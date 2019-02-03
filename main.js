@@ -224,11 +224,13 @@ class Scene extends Phaser.Scene {
 
   gameWon(player) {
     // prolly better ways to choose random number sans one value
-    const choices = Array.from({ length: this.playerCount }).splice(player, 1);
+    const choices = Array.from({ length: this.playerCount }, (_, k) => k).splice(player, 1);
+    console.log(choices);
     this.gameLost(choices[Math.floor(Math.random() * choices.length)]);
   }
 
   gameLost(player) {
+    alert(`player ${player} is sucks !`);
   }
 
   ticTacToeWin(tile, length = 3, previousX = 0, previousY = 0, textureKey = null) {
@@ -256,7 +258,7 @@ class Scene extends Phaser.Scene {
       },
       () => won,
     );
-    return won;
+    return won && tile.texture.key === textureKey;
   }
 
   flag(tile) {
@@ -305,7 +307,9 @@ class Scene extends Phaser.Scene {
     if (oldState === -10) {
       this.iterateMooreNeighborhood(tile.boardX, tile.boardY, this.uncover.bind(this));
     }
-    // if (bomb) this.gameLost(this.currentPlayer);
+    if (oldState === -9) {
+      this.gameLost(this.currentPlayer);
+    }
     return true;
   }
 

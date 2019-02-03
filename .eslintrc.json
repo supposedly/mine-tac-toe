@@ -1,0 +1,11 @@
+{
+    "extends": "airbnb-base",
+    "rules": {
+        "no-plusplus": ["error", {"allowForLoopAfterthoughts": true}],
+        "no-continue": "off",
+        "no-underscore-dangle": ["error", {"allowAfterThis": true}]
+    },
+    "globals": {
+        "Phaser": "readable"
+    }
+}

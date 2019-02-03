@@ -3,7 +3,8 @@
     "rules": {
         "no-plusplus": ["error", {"allowForLoopAfterthoughts": true}],
         "no-continue": "off",
-        "no-underscore-dangle": ["error", {"allowAfterThis": true}]
+        "no-underscore-dangle": ["error", {"allowAfterThis": true}],
+        "no-param-reassign": "off"
     },
     "globals": {
         "Phaser": "readable"

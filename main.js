@@ -3,6 +3,8 @@ const BOARD_WIDTH = 16;
 const BOARD_HEIGHT = 16;
 const MINE_COUNT = 20;
 
+
+// an enum, ish
 const Clicks = Object.freeze({
   LEFT: 1,
   RIGHT: 2,
@@ -220,6 +222,43 @@ class Scene extends Phaser.Scene {
     this._setTurnText();
   }
 
+  gameWon(player) {
+    // prolly better ways to choose random number sans one value
+    const choices = Array.from({ length: this.playerCount }).splice(player, 1);
+    this.gameLost(choices[Math.floor(Math.random() * choices.length)]);
+  }
+
+  gameLost(player) {
+  }
+
+  ticTacToeWin(tile, length = 3, previousX = 0, previousY = 0, textureKey = null) {
+    if (textureKey === null) {
+      textureKey = tile.texture.key;
+    }
+    if (!tile.isFlagged()) {
+      return false;
+    }
+    if (length <= 1) {
+      return tile.texture.key === textureKey;
+    }
+    let won = false;
+    this.iterateMooreNeighborhood(
+      tile.boardX, tile.boardY,
+      (neighbor, xOffset, yOffset) => {
+        neighbor.setTint(0xffffff);
+        // wins can only happen in a straight line
+        if (
+          (previousX === 0 && previousY === 0)
+          || (xOffset === previousX && yOffset === previousY)
+        ) {
+          won = won || this.ticTacToeWin(neighbor, length - 1, xOffset, yOffset, textureKey);
+        }
+      },
+      () => won,
+    );
+    return won;
+  }
+
   flag(tile) {
     if (
       !tile.isCovered()
@@ -230,8 +269,7 @@ class Scene extends Phaser.Scene {
     }
     let valid = false;
     this.iterateMooreNeighborhood(
-      tile.boardX,
-      tile.boardY,
+      tile.boardX, tile.boardY,
       (neighbor) => {
         valid = valid || (neighbor._state > 0 || neighbor.isFlagged(this.currentPlayer));
       },
@@ -239,6 +277,9 @@ class Scene extends Phaser.Scene {
     if (valid) {
       tile.flag(this.currentPlayer);
       this.playerFlags[this.currentPlayer].decrement();
+      if (this.ticTacToeWin(tile)) {
+        this.gameWon(this.currentPlayer);
+      }
     }
     return valid;
   }
@@ -264,6 +305,7 @@ class Scene extends Phaser.Scene {
     if (oldState === -10) {
       this.iterateMooreNeighborhood(tile.boardX, tile.boardY, this.uncover.bind(this));
     }
+    // if (bomb) this.gameLost(this.currentPlayer);
     return true;
   }
 
@@ -293,12 +335,13 @@ class Scene extends Phaser.Scene {
   countBombNeighbors(x, y) {
     let total = 0;
     this.iterateMooreNeighborhood(
-      x, y, (neighbor) => { total += (Math.abs(neighbor._state) === 9); }
+      x, y,
+      (neighbor) => { total += (Math.abs(neighbor._state) === 9); }
     );
     return total;
   }
 
-  iterateMooreNeighborhood(x, y, callback) {
+  iterateMooreNeighborhood(x, y, callback, breakCallback = null) {
     for (let yOffset = -1; yOffset <= 1; yOffset++) {
       if (y + yOffset < 0 || y + yOffset >= this.boardHeight) {
         continue;
@@ -311,7 +354,11 @@ class Scene extends Phaser.Scene {
         ) {
           continue;
         }
-        callback(this.board[y + yOffset][x + xOffset]);
+        const neighbor = this.board[y + yOffset][x + xOffset];
+        callback(neighbor, xOffset, yOffset);
+        if (breakCallback !== null && breakCallback(neighbor, xOffset, yOffset)) {
+          return;
+        }
       }
     }
   }

@@ -11,7 +11,7 @@ const Clicks = Object.freeze({
 
 class Tile extends Phaser.GameObjects.Sprite {
   constructor(scene, x, y, texture) {
-    super(scene, x * 32, y * 32, texture);
+    super(scene, x * 32, 64 + y * 32, texture);
     this.setOrigin(0, 0).setInteractive();
     this._state = -10;
     this._isFlagged = false;
@@ -22,12 +22,14 @@ class Tile extends Phaser.GameObjects.Sprite {
     this.on('pointerup', this.changeState);
   }
 
-  static _playerToKey(currentPlayer) {
+  // eslint-disable-next-line class-methods-use-this
+  _playerToKey(currentPlayer) {
     return currentPlayer === 0 ? 'x' : 'o';
   }
 
   changeState(data) {
     this.clearTint();
+    let changeTurn = true;
     switch (data.buttons) {
       case Clicks.LEFT:
         this.scene.uncover(this);
@@ -37,12 +39,16 @@ class Tile extends Phaser.GameObjects.Sprite {
           this.scene.flag(this);
         } else if (this._flaggedBy === this.scene.currentPlayer) {
           this.unflag();
+        } else {
+          changeTurn = false;
         }
         break;
       default:
         return;
     }
-    this.scene.changeTurn();
+    if (changeTurn) {
+      this.scene.changeTurn();
+    }
   }
 
   setState(num) {
@@ -101,6 +107,10 @@ class Scene extends Phaser.Scene {
 
     this.clickedYet = false;
     this.currentPlayer = 0;
+    /*
+    this.initialTime = null;
+    this.timeText = null;
+    */
 
     this.playerCount = PLAYER_COUNT;
     this.mineCount = MINE_COUNT;
@@ -131,6 +141,7 @@ class Scene extends Phaser.Scene {
   }
 
   create() {
+    /* this.timeText = this.add.text(0, 0).setOrigin(0, 0).setText('000'); */
     this.input.mouse.disableContextMenu();
     for (let y = 0; y < this.boardHeight; y++) {
       for (let x = 0; x < this.boardWidth; x++) {
@@ -139,8 +150,23 @@ class Scene extends Phaser.Scene {
     }
   }
 
-  // update(time, delta) {
-  // }
+  /*
+  update(time, delta) {
+    if (!this.clickedYet) {
+      return;
+    }
+    if (this.initialTime === null) {
+      this.initialTime = time / 1000;
+    }
+    this.timeText.setText(
+      Math.floor(time / 1000 - this.initialTime)
+        .toLocaleString('en', {
+          maximumFractionDigits: 0,
+          minimumIntegerDigits: 3,
+        }),
+    );
+  }
+  */
 
   changeTurn() {
     this.currentPlayer = (this.currentPlayer + 1) % 2;

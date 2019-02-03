@@ -32,15 +32,13 @@ class Tile extends Phaser.GameObjects.Sprite {
     let changeTurn = true;
     switch (data.buttons) {
       case Clicks.LEFT:
-        this.scene.uncover(this);
+        changeTurn = this.scene.uncover(this);
         break;
       case Clicks.RIGHT:
-        if (!this.isFlagged()) {
-          this.scene.flag(this);
-        } else if (this._flaggedBy === this.scene.currentPlayer) {
-          this.unflag();
+        if (this.isFlagged()) {
+          changeTurn = this.scene.unflag(this);
         } else {
-          changeTurn = false;
+          changeTurn = this.scene.flag(this);
         }
         break;
       default:
@@ -91,22 +89,56 @@ class Tile extends Phaser.GameObjects.Sprite {
     this._flaggedBy = currentPlayer;
   }
 
-  unflag() {
-    if (!this.isCovered()) {
-      return;
+  unflag(currentPlayer = null) {
+    if (!this.isCovered() || (currentPlayer !== null && this._flaggedBy !== currentPlayer)) {
+      return false;
     }
     this.setTexture('covered-tile');
     this._isFlagged = false;
     this._flaggedBy = null;
+    return true;
   }
 }
 
+
+class FlagCountText extends Phaser.GameObjects.Text {
+  constructor(scene, value, x, y, max = null, min = 0) {
+    super(scene, x, y, value.toString());
+    this.setOrigin(0, 0);
+    this.intValue = value;
+    this.maxValue = max === null ? this.intValue : max;
+    this.minValue = min;
+  }
+
+  decrement() {
+    if (this.intValue > this.minValue) {
+      this.intValue -= 1;
+      this.setText(this.intValue.toString());
+    }
+  }
+
+  increment() {
+    if (this.intValue < this.maxValue) {
+      this.intValue += 1;
+      this.setText(this.intValue.toString());
+    }
+  }
+}
+
+
 class Scene extends Phaser.Scene {
+  /* class vars assigned after class def
+  static TURN_ICONS = ['x', 'o'];
+  static PLAYER_COLORS = ['#f44', '#67f'];
+   */
+
   constructor(...args) {
     super(...args);
 
     this.clickedYet = false;
     this.currentPlayer = 0;
+    this.playerText = null;
+
     /*
     this.initialTime = null;
     this.timeText = null;
@@ -116,18 +148,19 @@ class Scene extends Phaser.Scene {
     this.mineCount = MINE_COUNT;
     this.boardHeight = BOARD_HEIGHT;
     this.boardWidth = BOARD_WIDTH;
+
+    this.playerFlags = new Array(this.playerCount).fill(null);
   }
 
   preload() {
     this.board = new Array(this.boardHeight)
       .fill(null)
-      .map(
-        () => new Array(this.boardWidth).fill(-10),
-      );
-
-    this.load.image('covered-tile', 'assets/covered-tile.png');
+      .map(() => new Array(this.boardWidth).fill(-10));
+    this.load.image('x', 'assets/x.png');
+    this.load.image('o', 'assets/o.png');
     this.load.image('x-flagged-tile', 'assets/x-flagged-tile.png');
     this.load.image('o-flagged-tile', 'assets/o-flagged-tile.png');
+    this.load.image('covered-tile', 'assets/covered-tile.png');
     this.load.image('0', 'assets/0.png');
     this.load.image('1', 'assets/1.png');
     this.load.image('2', 'assets/2.png');
@@ -141,12 +174,20 @@ class Scene extends Phaser.Scene {
   }
 
   create() {
-    /* this.timeText = this.add.text(0, 0).setOrigin(0, 0).setText('000'); */
     this.input.mouse.disableContextMenu();
+    /* this.timeText = this.add.text(0, 0).setOrigin(0, 0).setText('000'); */
+    this.playerText = this.add.text(2, 0, '', { font: '25px monospace', style: 'bold' }).setOrigin(0, 0);
+    this._setTurnText();
     for (let y = 0; y < this.boardHeight; y++) {
       for (let x = 0; x < this.boardWidth; x++) {
         this.board[y][x] = this.add.existing(new Tile(this, x, y, 'covered-tile'));
       }
+    }
+
+    for (let i = 0; i < this.playerCount; i++) {
+      this.add.image(544, 32 * i + 64, Scene.TURN_ICONS[i]).setOrigin(0, 0);
+      this.playerFlags[i] = new FlagCountText(this, this.mineCount, 584, 32 * i + 72);
+      this.add.existing(this.playerFlags[i]);
     }
   }
 
@@ -168,13 +209,24 @@ class Scene extends Phaser.Scene {
   }
   */
 
+  _setTurnText() {
+    const turnText = `PLAYER ${this.currentPlayer + 1}\n${Scene.TURN_ICONS[this.currentPlayer]}`;
+    this.playerText.setText(turnText);
+    this.playerText.setColor(Scene.PLAYER_COLORS[this.currentPlayer]);
+  }
+
   changeTurn() {
     this.currentPlayer = (this.currentPlayer + 1) % 2;
+    this._setTurnText();
   }
 
   flag(tile) {
-    if (!tile.isCovered() || tile.isFlagged()) {
-      return;
+    if (
+      !tile.isCovered()
+      || tile.isFlagged()
+      || this.playerFlags[this.currentPlayer] === 0
+    ) {
+      return false;
     }
     let valid = false;
     this.iterateMooreNeighborhood(
@@ -186,12 +238,22 @@ class Scene extends Phaser.Scene {
     );
     if (valid) {
       tile.flag(this.currentPlayer);
+      this.playerFlags[this.currentPlayer].decrement();
     }
+    return valid;
+  }
+
+  unflag(tile) {
+    const ret = tile.unflag(this.currentPlayer);
+    if (ret) {
+      this.playerFlags[this.currentPlayer].increment();
+    }
+    return ret;
   }
 
   uncover(tile) {
     if (!tile.isCovered() || tile.isFlagged()) {
-      return;
+      return false;
     }
     if (!this.clickedYet) {
       this.clickedYet = true;
@@ -202,6 +264,7 @@ class Scene extends Phaser.Scene {
     if (oldState === -10) {
       this.iterateMooreNeighborhood(tile.boardX, tile.boardY, this.uncover.bind(this));
     }
+    return true;
   }
 
   populate(avoidX, avoidY) {
@@ -253,8 +316,11 @@ class Scene extends Phaser.Scene {
     }
   }
 }
+Scene.TURN_ICONS = ['x', 'o'];
+Scene.PLAYER_COLORS = ['#f44', '#67f'];
 
 
+// eslint-disable-next-line no-new
 new Phaser.Game({
   type: Phaser.AUTO,
   width: 800,

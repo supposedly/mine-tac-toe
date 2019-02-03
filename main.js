@@ -10,12 +10,12 @@ const Clicks = Object.freeze({
   RIGHT: 2,
 });
 
+
 const MINESWEEPER_MSGS = [
   "{name}'s a darmn minesleeper",
   '{name} got SWEPT',
   "{name}'s doing july 4th early this year",
   'mine your own sweepwax, {name}',
-  'mine your swep, {name}',
   "you don't deserve a minesweeper pun, {name}",
 ];
 
@@ -33,7 +33,20 @@ const TICTACTOE_EXTRAS = {
   X: [
     "{name} got tentacion'd",
     '{name} keeps it 30, like the romans',
-  ]
+  ],
+};
+
+// from user Thomas Brierley on StackOverflow
+function wrap(s, w) {
+  return s.replace(
+    new RegExp(`(?![^\\n]{1,${w}}$)([^\\n]{1,${w}})\\s`, 'g'), '$1\n',
+  );
+}
+
+
+function getMessage(messages, name) {
+  return messages[Math.floor(Math.random() * messages.length)]
+    .replace('{name}', name);
 }
 
 
@@ -178,6 +191,9 @@ class Scene extends Phaser.Scene {
     this.boardWidth = BOARD_WIDTH;
 
     this.playerFlags = new Array(this.playerCount).fill(null);
+
+    this.gameOverMessage = null;
+    this.otherGameOverMessage = null;
   }
 
   preload() {
@@ -217,6 +233,20 @@ class Scene extends Phaser.Scene {
       this.playerFlags[i] = new FlagCountText(this, this.mineCount, 584, 32 * i + 72);
       this.add.existing(this.playerFlags[i]);
     }
+
+    this.gameOverMessage = this.add
+      .text(90, 32, '', {
+        fontSize: 50,
+        fontFamily: 'monospace',
+      })
+      .setBackgroundColor('#000');
+    this.otherGameOverMessage = this.add
+      .text(90, 80, '', {
+        fontSize: 20,
+        fontFamily: 'monospace',
+        wordWrap: { width: 400 },
+      })
+      .setBackgroundColor('#000');
   }
 
   /*
@@ -251,14 +281,16 @@ class Scene extends Phaser.Scene {
   gameWon(player, messages) {
     // prolly better ways to choose random number sans one value
     const choices = Array.from({ length: this.playerCount }, (_, k) => k).splice(player, 1);
-    this.gameLost(choices[Math.floor(Math.random() * choices.length)], messages);
+    this.gameLost(choices[Math.floor(Math.random() * choices.length)], player, messages);
   }
 
-  gameLost(player, messages) {
-    alert(
-      messages[Math.floor(Math.random() * messages.length)]
-      .replace('{name}', `player ${player + 1}`)
-    );
+  gameLost(player, winner, messages) {
+    this.gameOverMessage
+      .setColor(Scene.PLAYER_COLORS[winner])
+      .setText(`PLAYER ${winner + 1} WINS`);
+    this.otherGameOverMessage
+      // .setColor(Scene.PLAYER_COLORS[player])
+      .setText(getMessage(messages, `player ${player + 1}`));
   }
 
   ticTacToeWin(tile, length = 3, previousX = 0, previousY = 0, textureKey = null) {
@@ -341,7 +373,8 @@ class Scene extends Phaser.Scene {
       this.iterateMooreNeighborhood(tile.boardX, tile.boardY, this.uncover.bind(this));
     }
     if (oldState === -9) {
-      this.gameLost(this.currentPlayer, MINESWEEPER_MSGS);
+      // XXX: bad bad bad +(!...)
+      this.gameLost(this.currentPlayer, +(!this.currentPlayer), MINESWEEPER_MSGS);
     }
     return true;
   }

@@ -469,7 +469,7 @@ class Scene extends Phaser.Scene {
     if (
       !tile.isCovered()
       || tile.isFlagged()
-      || this.playerFlags[this.currentPlayer] === 0
+      || this.playerFlags[this.currentPlayer].intValue === 0
     ) {
       return false;
     }

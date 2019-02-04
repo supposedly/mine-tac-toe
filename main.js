@@ -15,7 +15,7 @@ const MINESWEEPER_MSGS = [
   "{name}'s a darmn minesleeper",
   '{name} got SWEPT',
   "{name}'s doin july 4th early this year",
-  'mine your own sweepwax, {name}',
+  'mine your own sweepswax, {name}',
   "you don't deserve a minesweeper pun, {name}",
 ];
 

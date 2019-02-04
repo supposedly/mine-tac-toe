@@ -47,12 +47,9 @@ function newArrayOf(length, callback) {
 
 
 class PairSet {
-  constructor(values) {
+  constructor() {
     this._map = {};
     this._size = 0;
-    if (values !== undefined) {
-      values.forEach(this.add);
-    }
   }
 
   _hasPrimary(a) {
@@ -70,11 +67,16 @@ class PairSet {
   }
 
   forEach(callback) {
-    Object.keys(this._map).forEach(
-      a => this._map[a].forEach(
-        b => callback(a, b, this)
-      )
-    );
+    // using for..in bc Object.{keys, entries} will coerce
+    // keys to strings. there may be a better way
+    // eslint-disable-next-line no-restricted-syntax
+    for (const a in this._map) {
+      if (this._hasPrimary(a)) {
+        this._map[a].forEach(
+          b => callback(a, b, this)
+        );
+      }
+    }
   }
 
   reduce(callback, defaultVal) {
@@ -112,6 +114,7 @@ class PairSet {
     }
     this._map[a].add(b);
     this._size += 1;
+    return this;
   }
 
   delete(a, b) {
@@ -120,6 +123,7 @@ class PairSet {
       delete this._map[a];
     }
     this._size -= 1;
+    return this;
   }
 
   has(a, b) {
@@ -421,25 +425,32 @@ class Scene extends Phaser.Scene {
       const toCheck = [];
       this.iterateCustomNeighborhood(
         tile.boardX, tile.boardY,
-        new PairSet([[0, 1], [1, 1], [1, 0], [-1, 0]]),
+        new PairSet()
+          .add(0, 1)
+          .add(1, 1)
+          .add(1, 0)
+          .add(-1, 0),
         (neighbor, xOffset, yOffset) => {
           if (
             neighbor.isFlagged(this.currentPlayer)
             && this.checkTile(
               tile.boardX - xOffset, tile.boardY - yOffset,
-              oppNeighbor => oppNeighbor.isFlagged(this.currentPlayer)
+              opposingNeighbor => opposingNeighbor.isFlagged(this.currentPlayer)
             )
           ) {
             toCheck.push(this.ticTacToeWin(neighbor, xOffset, yOffset));
           }
         }
       );
-      return toCheck.every(v => v);
-    }
-    const x = tile.boardX + prevX;
-    const y = tile.boardY + prevY;
-    if (this.checkTile(x, y, neighbor => neighbor.isFlagged(this.currentPlayer))) {
-      return this.ticTacToeWin(this.board[y][x], prevX, prevY);
+      if (toCheck.length > 0) {
+        return toCheck.every(v => v);
+      }
+    } else {
+      const x = tile.boardX + prevX;
+      const y = tile.boardY + prevY;
+      if (this.checkTile(x, y, neighbor => neighbor.isFlagged(this.currentPlayer))) {
+        return this.ticTacToeWin(this.board[y][x], prevX, prevY);
+      }
     }
     return this._ticTacToeWin(tile, 3, 0, 0, tile.texture.key);
   }
@@ -589,6 +600,8 @@ class Scene extends Phaser.Scene {
     // nbhd is a PairSet of (x, y) offsets
     nbhd.forEach(
       (xOffset, yOffset) => {
+        // XXX: I don't understand why xOffset is being passed in as a string
+        xOffset = +xOffset;
         if (
           y + yOffset < 0
           || y + yOffset >= this.boardHeight

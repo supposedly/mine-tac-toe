@@ -42,34 +42,69 @@ function getMessage(messages, name) {
   return `${s}\xa0`; // for padding
 }
 
+function newArrayOf(length, callback) {
+  return new Array(length).fill(null).map(callback);
+}
+
 
 class PairSet {
   constructor(values) {
     this._map = {};
-    values.forEach(this.add);
+    this._size = 0;
+    if (values !== undefined) {
+      values.forEach(this.add);
+    }
   }
 
   _hasPrimary(a) {
     return Object.prototype.hasOwnProperty.call(this._map, a);
   }
 
+  size(forceReevaluate = false) {
+    if (forceReevaluate || this._size === undefined) {
+      this._size = Object.keys(this._map).reduce(
+        a => this._map[a].size(),
+        0
+      );
+    }
+    return this._size;
+  }
+
   forEach(callback) {
     Object.keys(this._map).forEach(
       a => this._map[a].forEach(
-        b => callback(a, b)
+        b => callback(a, b, this)
       )
     );
   }
 
-  size() {
-    return Object.keys(this._map).reduce(
-      a => this._map[a].size(),
-      0
+  reduce(callback, defaultVal) {
+    let acc = defaultVal;
+    this.forEach(
+      (a, b) => { acc = callback(acc, a, b, this); }
+    );
+    return acc;
+  }
+
+  some(callback) {
+    // doesn't stop on first true... at least short-circuits, though
+    return this.reduce(
+      (acc, a, b) => acc || callback(a, b, this),
+      false
+    );
+  }
+
+  every(callback) {
+    // doesn't stop on first false... at least short-circuits, though
+    return this.reduce(
+      (acc, a, b) => acc && callback(a, b, this),
+      true
     );
   }
 
   clear() {
     this._map.clear();
+    this._size = 0;
   }
 
   add(a, b) {
@@ -77,13 +112,15 @@ class PairSet {
       this._map[a] = new Set();
     }
     this._map[a].add(b);
+    this._size += 1;
   }
 
   delete(a, b) {
     this._map[a].delete(b);
-    if (this._map[a].size() === 0) {
+    if (this._map[a].size === 0) {
       delete this._map[a];
     }
+    this._size -= 1;
   }
 
   has(a, b) {
@@ -233,14 +270,12 @@ class Scene extends Phaser.Scene {
     this.mineCount = MINE_COUNT;
     this.boardHeight = BOARD_HEIGHT;
     this.boardWidth = BOARD_WIDTH;
-    this.board = new Array(this.boardHeight)
-      .fill(null)
-      .map(() => new Array(this.boardWidth).fill(-10));
+    this.board = newArrayOf(this.boardHeight, () => new Array(this.boardWidth).fill(-10));
 
     // XXX: I seriously don't know why I didn't just make a Player class
     this.playerFlags = new Array(this.playerCount).fill(null);
-    this.correctFlags = new PairSet();
-    this.incorrectFlags = new PairSet();
+    this.correctFlags = newArrayOf(this.playerCount, () => new PairSet());
+    this.incorrectFlags = newArrayOf(this.playerCount, () => new PairSet());
 
     this.gameOverMessage = null;
     this.otherGameOverMessage = null;
@@ -383,7 +418,17 @@ class Scene extends Phaser.Scene {
       },
       () => won
     );
-    return won && tile.texture.key === textureKey;
+    return won;
+  }
+
+  allBombsFlagged() {
+    return this.correctFlags.every(
+      pairset => pairset.every(
+        (x, y) => Math.abs(this.board[y][x]._state) === 9
+      )
+    ) && this.correctFlags.reduce(
+      (acc, pairset) => acc + pairset.size(), 0
+    ) === this.mineCount;
   }
 
   flag(tile) {
@@ -402,12 +447,27 @@ class Scene extends Phaser.Scene {
       }
     );
     if (valid) {
+      if (Math.abs(tile._state) === 9) {
+        this.correctFlags[this.currentPlayer].add(tile.boardX, tile.boardY);
+      } else {
+        this.incorrectFlags[this.currentPlayer].add(tile.boardX, tile.boardY);
+      }
       tile.flag(this.currentPlayer);
       this.playerFlags[this.currentPlayer].decrement();
       // XXX: below line is jaaaankkyyy
       const xo = tile.texture.key.charAt(0).toUpperCase();
       if (this.ticTacToeWin(tile)) {
         this.gameWon(this.currentPlayer, TICTACTOE_MSGS.concat(TICTACTOE_EXTRAS[xo]));
+      }
+      if (this.allBombsFlagged()) {
+        this.gameWon(
+          this.correctFlags.reduce(
+            // index (player number) of largest PairSet in array
+            (max, v, i, arr) => { return v.size() > arr[max].size() ? max : i; },
+            0
+          ),
+          MINESWEEPER_MSGS
+        );
       }
     }
     return valid;
@@ -416,8 +476,14 @@ class Scene extends Phaser.Scene {
   unflag(tile) {
     const ret = tile.unflag(this.currentPlayer);
     if (ret) {
+      const correct = this.correctFlags[this.currentPlayer];
+      const incorrect = this.incorrectFlags[this.currentPlayer];
+      if (correct.has(tile.boardX, tile.boardY)) {
+        correct.delete(tile.boardX, tile.boardY);
+      } else if (incorrect.has(tile.boardX, tile.boardY)) {
+        incorrect.delete(tile.boardX, tile.boardY);
+      }
       this.playerFlags[this.currentPlayer].increment();
-
     }
     return ret;
   }

@@ -1,4 +1,9 @@
 # Mtictactoesweeper
+Niche indie game you just totally haven't heard of, duuuude.
+
+## Usage
+Clone, then start up a webserver in the repo's root. `python3 -m http.server` (aka `python2 -m SimpleHTTPServer`)
+suffices, for example.
 
 ## Gameplay
 - Each player starts with half as many flags as there are mines.

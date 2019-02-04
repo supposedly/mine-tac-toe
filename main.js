@@ -47,36 +47,45 @@ function newArrayOf(length, callback) {
 
 
 class PairSet {
-  constructor() {
-    this._map = {};
-    this._size = 0;
+  constructor(values) {
+    this.size = 0;
+    this._map = new Map();
+    if (values !== undefined) {
+      values.forEach(([a, b]) => this.add(a, b));
+    }
   }
 
   _hasPrimary(a) {
-    return Object.prototype.hasOwnProperty.call(this._map, a);
+    return this._map.has(a);
   }
 
-  size(forceReevaluate = false) {
-    if (forceReevaluate || this._size === undefined) {
-      this._size = Object.keys(this._map).reduce(
-        a => this._map[a].size(),
-        0
-      );
-    }
-    return this._size;
+  _getPrimary(a) {
+    return this._map.get(a);
+  }
+
+  _setPrimary(a) {
+    return this._map.set(a, new Set());
+  }
+
+  _delPrimary(a) {
+    return this._map.delete(a);
+  }
+
+  _size() {
+    // just in case
+    this.size = Object.keys(this._map).reduce(
+      a => this._map[a].size(),
+      0
+    );
+    return this.size;
   }
 
   forEach(callback) {
-    // using for..in bc Object.{keys, entries} will coerce
-    // keys to strings. there may be a better way
-    // eslint-disable-next-line no-restricted-syntax
-    for (const a in this._map) {
-      if (this._hasPrimary(a)) {
-        this._map[a].forEach(
-          b => callback(a, b, this)
-        );
-      }
-    }
+    this._map.forEach(
+      (set, a) => set.forEach(
+        b => callback(a, b, this)
+      )
+    );
   }
 
   reduce(callback, defaultVal) {
@@ -105,32 +114,35 @@ class PairSet {
 
   clear() {
     this._map.clear();
-    this._size = 0;
+    this.size = 0;
   }
 
   add(a, b) {
     if (!this._hasPrimary(a)) {
-      this._map[a] = new Set();
+      this._setPrimary(a);
     }
-    this._map[a].add(b);
-    this._size += 1;
+    this._getPrimary(a).add(b);
+    this.size += 1;
     return this;
   }
 
   delete(a, b) {
-    this._map[a].delete(b);
-    if (this._map[a].size === 0) {
-      delete this._map[a];
+    if (!this._hasPrimary(a)) {
+      return false;
     }
-    this._size -= 1;
-    return this;
+    const ret = this._getPrimary(a).delete(b);
+    if (this._getPrimary(a).size === 0) {
+      this._delPrimary(a);
+    }
+    this.size -= 1;
+    return ret;
   }
 
   has(a, b) {
     if (!this._hasPrimary(a)) {
       return false;
     }
-    return this._map[a].has(b);
+    return this._getPrimary(a).has(b);
   }
 }
 
@@ -425,11 +437,12 @@ class Scene extends Phaser.Scene {
       const toCheck = [];
       this.iterateCustomNeighborhood(
         tile.boardX, tile.boardY,
-        new PairSet()
-          .add(0, 1)
-          .add(1, 1)
-          .add(1, 0)
-          .add(-1, 0),
+        new PairSet([
+          [0, 1],
+          [1, 1],
+          [1, 0],
+          [1, -1],
+        ]),
         (neighbor, xOffset, yOffset) => {
           if (
             neighbor.isFlagged(this.currentPlayer)
@@ -461,7 +474,7 @@ class Scene extends Phaser.Scene {
         (x, y) => Math.abs(this.board[y][x]._state) === 9
       )
     ) && this.correctFlags.reduce(
-      (acc, pairset) => acc + pairset.size(), 0
+      (acc, pairset) => acc + pairset.size, 0
     ) === this.mineCount;
   }
 
@@ -497,7 +510,7 @@ class Scene extends Phaser.Scene {
         this.gameWon(
           this.correctFlags.reduce(
             // index (player number) of largest PairSet in array
-            (max, v, i, arr) => (v.size() > arr[max].size() ? max : i),
+            (max, v, i, arr) => (v.size > arr[max].size ? max : i),
             0
           ),
           MINESWEEPER_MSGS
@@ -544,8 +557,7 @@ class Scene extends Phaser.Scene {
 
   populate(avoidX, avoidY) {
     for (let count = 0; count < this.mineCount; count++) {
-      let x; let
-        y;
+      let x; let y;
       do {
         x = Math.floor(Math.random() * this.boardWidth);
         y = Math.floor(Math.random() * this.boardHeight);
@@ -574,7 +586,7 @@ class Scene extends Phaser.Scene {
     return total;
   }
 
-  iterateMooreNeighborhood(x, y, callback, breakCallback = null) {
+  iterateMooreNeighborhood(x, y, callback, breakCallback) {
     for (let yOffset = -1; yOffset <= 1; yOffset++) {
       if (y + yOffset < 0 || y + yOffset >= this.boardHeight) {
         continue;
@@ -589,7 +601,7 @@ class Scene extends Phaser.Scene {
         }
         const neighbor = this.board[y + yOffset][x + xOffset];
         callback(neighbor, xOffset, yOffset);
-        if (breakCallback !== null && breakCallback(neighbor, xOffset, yOffset)) {
+        if (breakCallback !== undefined && breakCallback(neighbor, xOffset, yOffset)) {
           return;
         }
       }
@@ -600,8 +612,6 @@ class Scene extends Phaser.Scene {
     // nbhd is a PairSet of (x, y) offsets
     nbhd.forEach(
       (xOffset, yOffset) => {
-        // XXX: I don't understand why xOffset is being passed in as a string
-        xOffset = +xOffset;
         if (
           y + yOffset < 0
           || y + yOffset >= this.boardHeight

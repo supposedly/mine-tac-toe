@@ -1,7 +1,7 @@
 const PLAYER_COUNT = 2;
 const BOARD_WIDTH = 16;
 const BOARD_HEIGHT = 16;
-const MINE_COUNT = 20;
+const MINE_COUNT = 40;
 
 
 // an enum, ish

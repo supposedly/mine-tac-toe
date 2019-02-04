@@ -14,7 +14,7 @@ const Clicks = Object.freeze({
 const MINESWEEPER_MSGS = [
   "{name}'s a darmn minesleeper",
   '{name} got SWEPT',
-  "{name}'s doing july 4th early this year",
+  "{name}'s doin july 4th early this year",
   'mine your own sweepwax, {name}',
   "you don't deserve a minesweeper pun, {name}",
 ];
@@ -32,7 +32,7 @@ const TICTACTOE_EXTRAS = {
   X: [
     "{name} got tentacion'd",
     '{name} keeps it 30, like the romans',
-  ]
+  ],
 };
 
 
@@ -45,14 +45,15 @@ function getMessage(messages, name) {
 class Tile extends Phaser.GameObjects.Sprite {
   constructor(scene, x, y, texture) {
     super(scene, x * 32, 64 + y * 32, texture);
-    this.setOrigin(0, 0).setInteractive();
+    this.setOrigin(0, 0)
+      .setInteractive()
+      .on('pointerdown', () => { if (this.isCovered()) this.setTint(0x777777); })
+      .on('pointerup', this.changeState);
     this._state = -10;
     this._isFlagged = false;
     this._flaggedBy = null;
     this.boardX = x;
     this.boardY = y;
-    this.on('pointerdown', () => { if (this.isCovered()) this.setTint(0x777777); });
-    this.on('pointerup', this.changeState);
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -165,9 +166,7 @@ class Scene extends Phaser.Scene {
   static PLAYER_COLORS = ['#f44', '#67f'];
    */
 
-  constructor(...args) {
-    super(...args);
-
+  initialize() {
     this.clickedYet = false;
     this.currentPlayer = 0;
     this.playerText = null;
@@ -181,6 +180,9 @@ class Scene extends Phaser.Scene {
     this.mineCount = MINE_COUNT;
     this.boardHeight = BOARD_HEIGHT;
     this.boardWidth = BOARD_WIDTH;
+    this.board = new Array(this.boardHeight)
+      .fill(null)
+      .map(() => new Array(this.boardWidth).fill(-10));
 
     this.playerFlags = new Array(this.playerCount).fill(null);
 
@@ -189,9 +191,8 @@ class Scene extends Phaser.Scene {
   }
 
   preload() {
-    this.board = new Array(this.boardHeight)
-      .fill(null)
-      .map(() => new Array(this.boardWidth).fill(-10));
+    this.initialize();
+    this.load.image('restart', 'assets/restart.png');
     this.load.image('x', 'assets/x.png');
     this.load.image('o', 'assets/o.png');
     this.load.image('x-flagged-tile', 'assets/x-flagged-tile.png');
@@ -212,7 +213,7 @@ class Scene extends Phaser.Scene {
   create() {
     this.input.mouse.disableContextMenu();
     /* this.timeText = this.add.text(0, 0).setOrigin(0, 0).setText('000'); */
-    this.playerText = this.add.text(2, 0, '', { font: '25px monospace', style: 'bold' }).setOrigin(0, 0);
+    this.playerText = this.add.text(2, 0, '', { fontSize: 25, fontFamily: 'monospace', fontStyle: 'bold' }).setOrigin(0, 0);
     this._setTurnText();
     for (let y = 0; y < this.boardHeight; y++) {
       for (let x = 0; x < this.boardWidth; x++) {
@@ -225,6 +226,13 @@ class Scene extends Phaser.Scene {
       this.playerFlags[i] = new FlagCountText(this, this.mineCount, 584, 32 * i + 72);
       this.add.existing(this.playerFlags[i]);
     }
+
+    const restartButton = this.add.image(656, 0, 'restart');
+    restartButton
+      .setOrigin(0, 0)
+      .setInteractive()
+      .on('pointerdown', () => restartButton.setTint(0x777777))
+      .on('pointerup', () => { restartButton.clearTint(); this.scene.restart(); });
 
     this.gameOverMessage = this.add
       .text(90, 32, '', {
@@ -259,6 +267,10 @@ class Scene extends Phaser.Scene {
   }
   */
 
+  restart() {
+    this.scene.restart();
+  }
+
   _setTurnText() {
     const turnText = `PLAYER ${this.currentPlayer + 1}\n${Scene.TURN_ICONS[this.currentPlayer]}`;
     this.playerText.setText(turnText);
@@ -271,7 +283,7 @@ class Scene extends Phaser.Scene {
   }
 
   gameWon(player, messages) {
-    // prolly better ways to choose random number sans one value
+    // prolly better ways to choose random number sans one value than this
     const choices = Array.from(
       { length: this.playerCount },
       (_, k) => k + (k >= player)
@@ -284,7 +296,6 @@ class Scene extends Phaser.Scene {
       .setColor(Scene.PLAYER_COLORS[winner])
       .setText(`PLAYER ${winner + 1} WINS`);
     this.otherGameOverMessage
-      // .setColor(Scene.PLAYER_COLORS[player])
       .setText(getMessage(messages, `player ${player + 1}`));
   }
 
@@ -383,8 +394,8 @@ class Scene extends Phaser.Scene {
         y = Math.floor(Math.random() * this.boardHeight);
       } while (
         Math.abs(x - avoidX) <= 1
-              || Math.abs(y - avoidY) <= 1
-              || this.board[y][x]._state === -9
+        || Math.abs(y - avoidY) <= 1
+        || this.board[y][x]._state === -9
       );
       this.board[y][x].setState(-9);
     }
@@ -437,5 +448,5 @@ new Phaser.Game({
   type: Phaser.AUTO,
   width: 800,
   height: 800,
-  scene: Scene
+  scene: Scene,
 });

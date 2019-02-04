@@ -37,8 +37,61 @@ const TICTACTOE_EXTRAS = {
 
 
 function getMessage(messages, name) {
-  return messages[Math.floor(Math.random() * messages.length)]
+  const s = messages[Math.floor(Math.random() * messages.length)]
     .replace('{name}', name);
+  return `${s}\xa0`; // for padding
+}
+
+
+class PairSet {
+  constructor(values) {
+    this._map = {};
+    values.forEach(this.add);
+  }
+
+  _hasPrimary(a) {
+    return Object.prototype.hasOwnProperty.call(this._map, a);
+  }
+
+  forEach(callback) {
+    Object.keys(this._map).forEach(
+      a => this._map[a].forEach(
+        b => callback(a, b)
+      )
+    );
+  }
+
+  size() {
+    return Object.keys(this._map).reduce(
+      a => this._map[a].size(),
+      0
+    );
+  }
+
+  clear() {
+    this._map.clear();
+  }
+
+  add(a, b) {
+    if (!this._hasPrimary(a)) {
+      this._map[a] = new Set();
+    }
+    this._map[a].add(b);
+  }
+
+  delete(a, b) {
+    this._map[a].delete(b);
+    if (this._map[a].size() === 0) {
+      delete this._map[a];
+    }
+  }
+
+  has(a, b) {
+    if (!this._hasPrimary(a)) {
+      return false;
+    }
+    return this._map[a].has(b);
+  }
 }
 
 
@@ -184,7 +237,10 @@ class Scene extends Phaser.Scene {
       .fill(null)
       .map(() => new Array(this.boardWidth).fill(-10));
 
+    // XXX: I seriously don't know why I didn't just make a Player class
     this.playerFlags = new Array(this.playerCount).fill(null);
+    this.correctFlags = new PairSet();
+    this.incorrectFlags = new PairSet();
 
     this.gameOverMessage = null;
     this.otherGameOverMessage = null;
@@ -361,6 +417,7 @@ class Scene extends Phaser.Scene {
     const ret = tile.unflag(this.currentPlayer);
     if (ret) {
       this.playerFlags[this.currentPlayer].increment();
+
     }
     return ret;
   }
@@ -379,7 +436,7 @@ class Scene extends Phaser.Scene {
       this.iterateMooreNeighborhood(tile.boardX, tile.boardY, this.uncover.bind(this));
     }
     if (oldState === -9) {
-      // XXX: bad bad bad +(!...)
+      // XXX: the +(!...) is bad bad baaaad
       this.gameLost(this.currentPlayer, +(!this.currentPlayer), MINESWEEPER_MSGS);
     }
     return true;

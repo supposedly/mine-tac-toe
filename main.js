@@ -26,15 +26,14 @@ const TICTACTOE_MSGS = [
 ];
 const TICTACTOE_EXTRAS = {
   O: [
-    'is this lOOOss, {name}?',
     'R.K.O.O.O. outta nowhere, {name}!',
+    'is this lOOOss, {name}?',
   ],
   X: [
     "{name} got tentacion'd",
     '{name} keeps it 30, like the romans',
   ],
 };
-
 
 function getMessage(messages, name) {
   const s = messages[Math.floor(Math.random() * messages.length)]
@@ -390,10 +389,7 @@ class Scene extends Phaser.Scene {
       .setText(getMessage(messages, `player ${player + 1}`));
   }
 
-  ticTacToeWin(tile, length = 3, previousX = 0, previousY = 0, textureKey = null) {
-    if (textureKey === null) {
-      textureKey = tile.texture.key;
-    }
+  _ticTacToeWin(tile, length, previousX, previousY, textureKey) {
     if (!tile.isFlagged()) {
       return false;
     }
@@ -404,14 +400,13 @@ class Scene extends Phaser.Scene {
     this.iterateMooreNeighborhood(
       tile.boardX, tile.boardY,
       (neighbor, xOffset, yOffset) => {
-        neighbor.setTint(0xffffff);
         // wins can only happen in a straight line
         if (
           (previousX === 0 && previousY === 0)
           || (xOffset === previousX && yOffset === previousY)
         ) {
           won = won || (
-            this.ticTacToeWin(neighbor, length - 1, xOffset, yOffset, textureKey)
+            this._ticTacToeWin(neighbor, length - 1, xOffset, yOffset, textureKey)
             && tile.texture.key === textureKey
           );
         }
@@ -419,6 +414,34 @@ class Scene extends Phaser.Scene {
       () => won
     );
     return won;
+  }
+
+  ticTacToeWin(tile, prevX, prevY) {
+    if (prevX === undefined && prevY === undefined) {
+      const toCheck = [];
+      this.iterateCustomNeighborhood(
+        tile.boardX, tile.boardY,
+        new PairSet([[0, 1], [1, 1], [1, 0], [-1, 0]]),
+        (neighbor, xOffset, yOffset) => {
+          if (
+            neighbor.isFlagged(this.currentPlayer)
+            && this.checkTile(
+              tile.boardX - xOffset, tile.boardY - yOffset,
+              oppNeighbor => oppNeighbor.isFlagged(this.currentPlayer)
+            )
+          ) {
+            toCheck.push(this.ticTacToeWin(neighbor, xOffset, yOffset));
+          }
+        }
+      );
+      return toCheck.every(v => v);
+    }
+    const x = tile.boardX + prevX;
+    const y = tile.boardY + prevY;
+    if (this.checkTile(x, y, neighbor => neighbor.isFlagged(this.currentPlayer))) {
+      return this.ticTacToeWin(this.board[y][x], prevX, prevY);
+    }
+    return this._ticTacToeWin(tile, 3, 0, 0, tile.texture.key);
   }
 
   allBombsFlagged() {
@@ -560,6 +583,31 @@ class Scene extends Phaser.Scene {
         }
       }
     }
+  }
+
+  iterateCustomNeighborhood(x, y, nbhd, callback) {
+    // nbhd is a PairSet of (x, y) offsets
+    nbhd.forEach(
+      (xOffset, yOffset) => {
+        if (
+          y + yOffset < 0
+          || y + yOffset >= this.boardHeight
+          || x + xOffset < 0
+          || x + xOffset >= this.boardWidth
+          || (yOffset === 0 && xOffset === 0)
+        ) {
+          return;
+        }
+        callback(this.board[y + yOffset][x + xOffset], xOffset, yOffset);
+      }
+    );
+  }
+
+  checkTile(x, y, callback) {
+    if (x < 0 || x >= this.boardWidth || y < 0 || y >= this.boardHeight) {
+      return false;
+    }
+    return callback(this.board[y][x], x, y);
   }
 }
 Scene.TURN_ICONS = ['x', 'o'];

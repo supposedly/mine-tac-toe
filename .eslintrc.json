@@ -4,7 +4,15 @@
         "no-plusplus": ["error", {"allowForLoopAfterthoughts": true}],
         "no-continue": "off",
         "no-underscore-dangle": ["error", {"allowAfterThis": true}],
-        "no-param-reassign": "off"
+        "no-param-reassign": "off",
+        "comma-dangle": ["error", {
+          "functions": "never",
+          "objects": "always-multiline",
+          "arrays": "always-multiline",
+          "imports": "always-multiline",
+          "exports": "always-multiline"
+          }
+        ]
     },
     "globals": {
         "Phaser": "readable"

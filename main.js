@@ -20,7 +20,6 @@ const MINESWEEPER_MSGS = [
 ];
 
 const TICTACTOE_MSGS = [
-  '{name} noughted one cross too many',
   "{name} tic'd when they shoulda tac'd",
   '{name} got tic-tac-told',
   'tic tac go home, {name}',
@@ -33,15 +32,8 @@ const TICTACTOE_EXTRAS = {
   X: [
     "{name} got tentacion'd",
     '{name} keeps it 30, like the romans',
-  ],
+  ]
 };
-
-// from user Thomas Brierley on StackOverflow
-function wrap(s, w) {
-  return s.replace(
-    new RegExp(`(?![^\\n]{1,${w}}$)([^\\n]{1,${w}})\\s`, 'g'), '$1\n',
-  );
-}
 
 
 function getMessage(messages, name) {
@@ -280,7 +272,10 @@ class Scene extends Phaser.Scene {
 
   gameWon(player, messages) {
     // prolly better ways to choose random number sans one value
-    const choices = Array.from({ length: this.playerCount }, (_, k) => k).splice(player, 1);
+    const choices = Array.from(
+      { length: this.playerCount },
+      (_, k) => k + (k >= player)
+    ).slice(0, -1);
     this.gameLost(choices[Math.floor(Math.random() * choices.length)], player, messages);
   }
 
@@ -319,7 +314,7 @@ class Scene extends Phaser.Scene {
           );
         }
       },
-      () => won,
+      () => won
     );
     return won && tile.texture.key === textureKey;
   }
@@ -337,7 +332,7 @@ class Scene extends Phaser.Scene {
       tile.boardX, tile.boardY,
       (neighbor) => {
         valid = valid || (neighbor._state > 0 || neighbor.isFlagged(this.currentPlayer));
-      },
+      }
     );
     if (valid) {
       tile.flag(this.currentPlayer);
@@ -398,7 +393,7 @@ class Scene extends Phaser.Scene {
         if (Math.abs(tile._state) !== 9) {
           tile.setState(-this.countBombNeighbors(tile.boardX, tile.boardY) || -10);
         }
-      },
+      }
     ));
   }
 
@@ -442,5 +437,5 @@ new Phaser.Game({
   type: Phaser.AUTO,
   width: 800,
   height: 800,
-  scene: Scene,
+  scene: Scene
 });

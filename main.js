@@ -314,7 +314,7 @@ class Scene extends Phaser.Scene {
 
     for (let i = 0; i < this.playerCount; i++) {
       this.add.image(544, 32 * i + 64, Scene.TURN_ICONS[i]).setOrigin(0, 0);
-      this.playerFlags[i] = new FlagCountText(this, this.mineCount, 584, 32 * i + 72);
+      this.playerFlags[i] = new FlagCountText(this, this.mineCount / 2, 584, 32 * i + 72);
       this.add.existing(this.playerFlags[i]);
     }
 
@@ -463,7 +463,7 @@ class Scene extends Phaser.Scene {
         this.gameWon(
           this.correctFlags.reduce(
             // index (player number) of largest PairSet in array
-            (max, v, i, arr) => { return v.size() > arr[max].size() ? max : i; },
+            (max, v, i, arr) => (v.size() > arr[max].size() ? max : i),
             0
           ),
           MINESWEEPER_MSGS

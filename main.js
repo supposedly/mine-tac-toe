@@ -134,7 +134,7 @@ class PairSet {
 
 class Tile extends Phaser.GameObjects.Sprite {
   constructor(scene, x, y, texture) {
-    super(scene, x * 32, 64 + y * 32, texture);
+    super(scene, 5 + x * 32, 64 + y * 32, texture);
     this.setOrigin(0, 0)
       .setInteractive()
       .on('pointerdown', () => { if (this.isCovered()) this.setTint(0x777777); })
@@ -318,7 +318,7 @@ class Scene extends Phaser.Scene {
       this.add.existing(this.playerFlags[i]);
     }
 
-    const restartButton = this.add.image(656, 0, 'restart');
+    const restartButton = this.add.image(651, 5, 'restart');
     restartButton
       .setOrigin(0, 0)
       .setInteractive()
@@ -566,10 +566,9 @@ Scene.TURN_ICONS = ['x', 'o'];
 Scene.PLAYER_COLORS = ['#f44', '#67f'];
 
 
-// eslint-disable-next-line no-new
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   width: 800,
-  height: 800,
+  height: 600,
   scene: Scene,
 });

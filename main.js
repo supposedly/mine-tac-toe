@@ -2,6 +2,7 @@ const PLAYER_COUNT = 2;
 const BOARD_WIDTH = 16;
 const BOARD_HEIGHT = 16;
 const MINE_COUNT = 40;
+const FLAG_COUNT_MULTIPLIER = 0.625;
 
 
 // an enum, ish
@@ -281,10 +282,11 @@ class Scene extends Phaser.Scene {
     this.timeText = null;
     */
 
-    this.playerCount = PLAYER_COUNT;
-    this.mineCount = MINE_COUNT;
     this.boardHeight = BOARD_HEIGHT;
     this.boardWidth = BOARD_WIDTH;
+    this.playerCount = PLAYER_COUNT;
+    this.mineCount = MINE_COUNT;
+    this.initialFlagCount = Math.floor(this.mineCount * FLAG_COUNT_MULTIPLIER);
     this.board = newArrayOf(this.boardHeight, () => new Array(this.boardWidth).fill(-10));
 
     // XXX: I seriously don't know why I didn't just make a Player class
@@ -329,7 +331,7 @@ class Scene extends Phaser.Scene {
 
     for (let i = 0; i < this.playerCount; i++) {
       this.add.image(544, 32 * i + 64, Scene.TURN_ICONS[i]).setOrigin(0, 0);
-      this.playerFlags[i] = new FlagCountText(this, this.mineCount / 2, 584, 32 * i + 72);
+      this.playerFlags[i] = new FlagCountText(this, this.initialFlagCount, 584, 32 * i + 72);
       this.add.existing(this.playerFlags[i]);
     }
 

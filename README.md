@@ -6,7 +6,7 @@ Clone, then start up a webserver in the repo's root. `python3 -m http.server` (a
 suffices, for example.
 
 ## Gameplay
-- Each player starts with half as many flags as there are mines.
+- Each player starts with a bit more than half as many flags as there are mines. (5/8 rounded down, to be exact)
 - On each turn, a player can either reveal or flag/unflag a covered tile.
 - Like in regular minesweeper, a tile cannot be uncovered if it is flagged.
 - A flag can only be removed by the player who placed it.

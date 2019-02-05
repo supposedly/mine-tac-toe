@@ -16,9 +16,9 @@ suffices, for example.
 ## Game-over conditions
 Unlike in regular minesweeper, the game does not end when all non-mine tiles are uncovered.  
 Instead, the game can be...
-  - **won** by placing three or more flags of the same color in a straight line (tic-tac-toe victory).
-  - **won** by having flagged the most mines correctly once all mines are flagged (minesweeper victory).
-  - **lost** by uncovering a mine (minesweeper defeat).
+  - **won** by placing three or more flags of the same color in a straight line (tic-tac-toe victory)
+  - **won** by having flagged the most mines correctly once all mines are flagged (minesweeper victory)
+  - **lost** by uncovering a mine (minesweeper defeat)
 
 ## Emergent strategies
 - Uncovering tiles rashly to stop an opponent from advancing toward tic-tac-toe victory.
@@ -27,3 +27,11 @@ Instead, the game can be...
   up room for tic-tac-toe defeat).
 Overall, and particularly with low mine-counts, the game plays more like "tactical tic-tac-toe" than like minesweeper.
 That could be mitigated by bumping up the number of mines... but that also makes it even-more boring, so.
+
+## Credits
+- [Phaser 3](https://phaser.io/phaser3). Rather enjoyable to work with, even if there aren't yet too many
+  non-Phaser-2 resources out there. Would recommend.
+- [Discord](https://discordapp.com) for introducing
+  [spoiler tags](https://support.discordapp.com/hc/en-us/articles/360022320632-Spoiler-Tags-),
+  which prompted people to make [minesweeper games](https://redd.it/am0c3i) and ultimately got
+  this idea into my head

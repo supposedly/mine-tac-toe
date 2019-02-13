@@ -2,7 +2,8 @@ const PLAYER_COUNT = 2;
 const BOARD_WIDTH = 16;
 const BOARD_HEIGHT = 16;
 const MINE_COUNT = 40;
-const FLAG_COUNT_MULTIPLIER = 0.625;
+const FLAG_COUNT_MULTIPLIER = 0.625; // 5/8
+const TIC_TAC_TOE_WIN_LENGTH = 3;
 
 
 // an enum, ish
@@ -35,6 +36,7 @@ const TICTACTOE_EXTRAS = {
     '{name} keeps it 30, like the romans',
   ],
 };
+
 
 function getMessage(messages, name) {
   const s = messages[Math.floor(Math.random() * messages.length)]
@@ -146,6 +148,13 @@ class PairSet {
     return this._getPrimary(a).has(b);
   }
 }
+
+const HALF_MOORE = new PairSet([
+  [0, 1],
+  [1, 1],
+  [1, 0],
+  [1, -1],
+]);
 
 
 class Tile extends Phaser.GameObjects.Sprite {
@@ -325,7 +334,7 @@ class Scene extends Phaser.Scene {
     this._setTurnText();
     for (let y = 0; y < this.boardHeight; y++) {
       for (let x = 0; x < this.boardWidth; x++) {
-        this.board[y][x] = this.add.existing(new Tile(this, x, y, 'covered-tile'));
+        this.setCell(x, y, this.add.existing(new Tile(this, x, y, 'covered-tile')));
       }
     }
 
@@ -385,6 +394,14 @@ class Scene extends Phaser.Scene {
     this.playerText.setColor(Scene.PLAYER_COLORS[this.currentPlayer]);
   }
 
+  cellAt(x, y) {
+    return this.board[y][x];
+  }
+
+  setCell(x, y, value) {
+    this.board[y][x] = value;
+  }
+
   changeTurn() {
     this.currentPlayer = (this.currentPlayer + 1) % 2;
     this._setTurnText();
@@ -407,73 +424,31 @@ class Scene extends Phaser.Scene {
       .setText(getMessage(messages, `player ${player + 1}`));
   }
 
-  _ticTacToeWin(tile, length, previousX, previousY, textureKey) {
-    if (!tile.isFlagged()) {
-      return false;
+  runLength(x, y, xOffset, yOffset, origin) {
+    if (origin === undefined) {
+      origin = this.cellAt(x, y).texture.key;
+      return 1
+        + this.runLength(x + xOffset, y + yOffset, xOffset, yOffset, origin)
+        + this.runLength(x - xOffset, y - yOffset, -xOffset, -yOffset, origin);
     }
-    if (length <= 1) {
-      return tile.texture.key === textureKey;
+    if (this.checkTile(x, y, tile => tile.texture.key === origin)) {
+      return 1 + this.runLength(x + xOffset, y + yOffset, xOffset, yOffset, origin);
     }
-    let won = false;
-    this.iterateMooreNeighborhood(
-      tile.boardX, tile.boardY,
-      (neighbor, xOffset, yOffset) => {
-        // wins can only happen in a straight line
-        if (
-          (previousX === 0 && previousY === 0)
-          || (xOffset === previousX && yOffset === previousY)
-        ) {
-          won = won || (
-            this._ticTacToeWin(neighbor, length - 1, xOffset, yOffset, textureKey)
-            && tile.texture.key === textureKey
-          );
-        }
-      },
-      () => won
-    );
-    return won;
+    return 0;
   }
 
-  ticTacToeWin(tile, prevX, prevY) {
-    if (prevX === undefined && prevY === undefined) {
-      const toCheck = [];
-      this.iterateCustomNeighborhood(
-        tile.boardX, tile.boardY,
-        new PairSet([
-          [0, 1],
-          [1, 1],
-          [1, 0],
-          [1, -1],
-        ]),
-        (neighbor, xOffset, yOffset) => {
-          if (
-            neighbor.isFlagged(this.currentPlayer)
-            && this.checkTile(
-              tile.boardX - xOffset, tile.boardY - yOffset,
-              opposingNeighbor => opposingNeighbor.isFlagged(this.currentPlayer)
-            )
-          ) {
-            toCheck.push(this.ticTacToeWin(neighbor, xOffset, yOffset));
-          }
-        }
-      );
-      if (toCheck.length > 0) {
-        return toCheck.every(v => v);
-      }
-    } else {
-      const x = tile.boardX + prevX;
-      const y = tile.boardY + prevY;
-      if (this.checkTile(x, y, neighbor => neighbor.isFlagged(this.currentPlayer))) {
-        return this.ticTacToeWin(this.board[y][x], prevX, prevY);
-      }
-    }
-    return this._ticTacToeWin(tile, 3, 0, 0, tile.texture.key);
+  ticTacToeWin(tile) {
+    return HALF_MOORE.some(
+      (xOffset, yOffset) => this.runLength(
+        tile.boardX, tile.boardY, xOffset, yOffset
+      ) >= TIC_TAC_TOE_WIN_LENGTH
+    );
   }
 
   allBombsFlagged() {
     return this.correctFlags.every(
       pairset => pairset.every(
-        (x, y) => Math.abs(this.board[y][x]._state) === 9
+        (x, y) => Math.abs(this.cellAt(x, y)._state) === 9
       )
     ) && this.correctFlags.reduce(
       (acc, pairset) => acc + pairset.size, 0
@@ -566,9 +541,9 @@ class Scene extends Phaser.Scene {
       } while (
         Math.abs(x - avoidX) <= 1
         || Math.abs(y - avoidY) <= 1
-        || this.board[y][x]._state === -9
+        || this.cellAt(x, y)._state === -9
       );
-      this.board[y][x].setState(-9);
+      this.cellAt(x, y).setState(-9);
     }
     this.board.forEach(arr => arr.forEach(
       (tile) => {
@@ -601,7 +576,7 @@ class Scene extends Phaser.Scene {
         ) {
           continue;
         }
-        const neighbor = this.board[y + yOffset][x + xOffset];
+        const neighbor = this.cellAt(x + xOffset, y + yOffset);
         callback(neighbor, xOffset, yOffset);
         if (breakCallback !== undefined && breakCallback(neighbor, xOffset, yOffset)) {
           return;
@@ -623,7 +598,7 @@ class Scene extends Phaser.Scene {
         ) {
           return;
         }
-        callback(this.board[y + yOffset][x + xOffset], xOffset, yOffset);
+        callback(this.cellAt(x + xOffset, y + yOffset), xOffset, yOffset);
       }
     );
   }
@@ -632,7 +607,7 @@ class Scene extends Phaser.Scene {
     if (x < 0 || x >= this.boardWidth || y < 0 || y >= this.boardHeight) {
       return false;
     }
-    return callback(this.board[y][x], x, y);
+    return callback(this.cellAt(x, y), x, y);
   }
 }
 Scene.TURN_ICONS = ['x', 'o'];

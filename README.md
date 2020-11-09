@@ -1,4 +1,4 @@
-# Mtictactoesweeper
+# [Mtictactoesweeper](https://supposedly.github.io/mine-tac-toe)
 Niche indie game you just totally haven't heard of, duuuude.
 
 ## Usage

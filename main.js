@@ -5,6 +5,8 @@ const MINE_COUNT = 40;
 const FLAG_COUNT_MULTIPLIER = 0.625; // 5/8
 const TIC_TAC_TOE_WIN_LENGTH = 3;
 
+const SEED_DIGITS = Math.pow(10, 10);
+
 
 // an enum, ish
 const Clicks = Object.freeze({
@@ -46,6 +48,10 @@ function getMessage(messages, name) {
 
 function newArrayOf(length, callback) {
   return new Array(length).fill(null).map(callback);
+}
+
+function newSeed(seedGen) {
+  return `${Math.floor(seedGen() * SEED_DIGITS)}`;
 }
 
 
@@ -274,6 +280,7 @@ class FlagCountText extends Phaser.GameObjects.Text {
   }
 }
 
+let initialized = false;
 
 class Scene extends Phaser.Scene {
   /* class vars assigned after class def
@@ -309,22 +316,31 @@ class Scene extends Phaser.Scene {
 
   preload() {
     this.initialize();
-    this.load.image('restart', 'assets/restart.png');
-    this.load.image('x', 'assets/x.png');
-    this.load.image('o', 'assets/o.png');
-    this.load.image('x-flagged-tile', 'assets/x-flagged-tile.png');
-    this.load.image('o-flagged-tile', 'assets/o-flagged-tile.png');
-    this.load.image('covered-tile', 'assets/covered-tile.png');
-    this.load.image('0', 'assets/0.png');
-    this.load.image('1', 'assets/1.png');
-    this.load.image('2', 'assets/2.png');
-    this.load.image('3', 'assets/3.png');
-    this.load.image('4', 'assets/4.png');
-    this.load.image('5', 'assets/5.png');
-    this.load.image('6', 'assets/6.png');
-    this.load.image('7', 'assets/7.png');
-    this.load.image('8', 'assets/8.png');
-    this.load.image('9', 'assets/bomb.png');
+    if (!initialized) {
+      initialized = true;
+      this.seedBox = document.getElementById('im-seed');
+      this.seed = newSeed(Math.random);
+      this.rng = new Math.seedrandom(this.seed);
+      this.seedBox.value = this.seed;
+      this.seedBox.hidden = false;
+
+      this.load.image('restart', 'assets/restart.png');
+      this.load.image('x', 'assets/x.png');
+      this.load.image('o', 'assets/o.png');
+      this.load.image('x-flagged-tile', 'assets/x-flagged-tile.png');
+      this.load.image('o-flagged-tile', 'assets/o-flagged-tile.png');
+      this.load.image('covered-tile', 'assets/covered-tile.png');
+      this.load.image('0', 'assets/0.png');
+      this.load.image('1', 'assets/1.png');
+      this.load.image('2', 'assets/2.png');
+      this.load.image('3', 'assets/3.png');
+      this.load.image('4', 'assets/4.png');
+      this.load.image('5', 'assets/5.png');
+      this.load.image('6', 'assets/6.png');
+      this.load.image('7', 'assets/7.png');
+      this.load.image('8', 'assets/8.png');
+      this.load.image('9', 'assets/bomb.png');
+    }
   }
 
   create() {
@@ -337,6 +353,12 @@ class Scene extends Phaser.Scene {
         this.setCell(x, y, this.add.existing(new Tile(this, x, y, 'covered-tile')));
       }
     }
+    
+    // highlight a random tile to get the player to click it
+    // this allows two players playing remotely to easily click the same initial tile
+    this.firstTileX = Math.floor(this.rng() * this.boardWidth / 2 + this.boardWidth / 4);
+    this.firstTileY = Math.floor(this.rng() * this.boardHeight / 2 + this.boardHeight / 4)
+    this.board[this.firstTileY][this.firstTileX].setTint(0xf00bbb);
 
     for (let i = 0; i < this.playerCount; i++) {
       this.add.image(544, 32 * i + 64, Scene.TURN_ICONS[i]).setOrigin(0, 0);
@@ -349,7 +371,10 @@ class Scene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setInteractive()
       .on('pointerdown', () => restartButton.setTint(0x777777))
-      .on('pointerup', () => { restartButton.clearTint(); this.scene.restart(); });
+      .on('pointerup', () => { restartButton.clearTint(); this.makeTheBoardIntoANewBoard(); });
+    
+    // const seedBox = this.add.boxWhereYouInputASeedOfYourChoosing(544, 100)
+    //   .use();
 
     this.gameOverMessage = this.add
       .text(90, 32, '', {
@@ -384,7 +409,20 @@ class Scene extends Phaser.Scene {
   }
   */
 
-  restart() {
+  setSeed(seed) {
+    this.seed = seed;
+    this.seedBox.value = seed;
+    this.rng = new Math.seedrandom(seed);
+  }
+
+  // formerly `restart()`
+  makeTheBoardIntoANewBoard() {
+    console.log(`${this.seedBox.value}`, `${this.seed}`, `${this.seedBox.value}` === `${this.seed}`);
+    if (this.seedBox.value === this.seed) {
+      this.setSeed(newSeed(this.rng))
+    } else {
+      this.setSeed(this.seedBox.value)
+    }
     this.scene.restart();
   }
 
@@ -487,6 +525,7 @@ class Scene extends Phaser.Scene {
         this.gameWon(
           this.correctFlags.reduce(
             // index (player number) of largest PairSet in array
+            // (update 2 years later: that's code for "person with the most correct flags wins")
             (max, v, i, arr) => (v.size > arr[max].size ? max : i),
             0
           ),
@@ -519,6 +558,7 @@ class Scene extends Phaser.Scene {
     if (!this.clickedYet) {
       this.clickedYet = true;
       this.populate(tile.boardX, tile.boardY);
+      this.board[this.firstTileY][this.firstTileX].clearTint();
     }
     const oldState = tile._state;
     tile.uncover();
@@ -536,8 +576,8 @@ class Scene extends Phaser.Scene {
     for (let count = 0; count < this.mineCount; count++) {
       let x; let y;
       do {
-        x = Math.floor(Math.random() * this.boardWidth);
-        y = Math.floor(Math.random() * this.boardHeight);
+        x = Math.floor(this.rng() * this.boardWidth);
+        y = Math.floor(this.rng() * this.boardHeight);
       } while (
         Math.abs(x - avoidX) <= 1
         || Math.abs(y - avoidY) <= 1
@@ -620,3 +660,5 @@ const game = new Phaser.Game({
   height: 600,
   scene: Scene,
 });
+
+// ERIC WAS HERE

@@ -16,33 +16,41 @@ const Clicks = Object.freeze({
 
 
 const MINESWEEPER_MSGS = [
-  "{name}'s a darmn minesleeper",
-  '{name} got SWEPT',
-  "{name}'s doin july 4th early this year",
-  'mine your own sweepswax, {name}',
-  "you don't deserve a minesweeper pun, {name}",
+  "{loser}'s a darmn minesleeper",
+  '{loser} got SWEPT',
+  "{loser}'s doin july 4th early this year",
+  'mine your own sweepswax, {loser}',
+  "you don't deserve a minesweeper pun, {loser}",
+  'a clean sweep… no miner defeat for {loser}',
+  'one small step for man\none big ol sweep for {loser}',
+  'X didnt mark the spot for {loser}',
+  '{loser} is great! player {LOSER } rocks! {loser} is the best player ever!'
 ];
 
 const TICTACTOE_MSGS = [
-  "{name} tic'd when they shoulda tac'd",
-  '{name} got tic-tac-told',
-  'tic tac go home, {name}',
+  "{loser} tic'd when they shoulda tac'd",
+  '{loser} got tic-tac-told',
+  'tic tac go home, {loser}',
+  'learn ur tic tac tac tics, {loser}',
+  '{loser} is great! player {LOSER } rocks! {loser} is the best player ever!'
 ];
 const TICTACTOE_EXTRAS = {
   O: [
-    'R.K.O.O.O. outta nowhere, {name}!',
-    'is this lOOOss, {name}?',
+    'R.K.O.O.O. outta nowhere, {loser}!',
+    'is this lOOOss, {loser}?',
+    '{loser} is Xout Xof Xorder lmao. wait wrong pun'
   ],
   X: [
-    "{name} got tentacion'd",
-    '{name} keeps it 30, like the romans',
+    "{loser} got tentacion'd",
+    '{loser} oughta keep it 30, like the romans',
+    '{loser} is Out Of Order lmao get it'
   ],
 };
 
 
-function getMessage(messages, name) {
+function getMessage(messages, loser) {
   const s = messages[Math.floor(Math.random() * messages.length)]
-    .replace('{name}', name);
+    .replaceAll('{loser}', loser);
   return `${s}\xa0`; // for padding
 }
 
@@ -177,9 +185,9 @@ class Tile extends Phaser.GameObjects.Sprite {
     this.boardY = y;
   }
 
-  // eslint-disable-next-line class-methods-use-this
+  // eslint-disable-next-line class-methods-use-this no-use-before-define
   _playerToKey(currentPlayer) {
-    return currentPlayer === 0 ? 'x' : 'o';
+    return Scene.TURN_ICONS[currentPlayer];
   }
 
   changeState(data) {
@@ -427,7 +435,7 @@ class Scene extends Phaser.Scene {
   }
 
   _setTurnText() {
-    const turnText = `PLAYER ${this.currentPlayer + 1}\n${Scene.TURN_ICONS[this.currentPlayer]}`;
+    const turnText = `PLAYER ${Scene.TURN_ICONS[this.currentPlayer].toUpperCase()}`;
     this.playerText.setText(turnText);
     this.playerText.setColor(Scene.PLAYER_COLORS[this.currentPlayer]);
   }
@@ -457,9 +465,9 @@ class Scene extends Phaser.Scene {
   gameLost(player, winner, messages) {
     this.gameOverMessage
       .setColor(Scene.PLAYER_COLORS[winner])
-      .setText(`PLAYER ${winner + 1} WINS`);
+      .setText(`PLAYER ${Scene.TURN_ICONS[winner].toUpperCase()} WINS`);
     this.otherGameOverMessage
-      .setText(getMessage(messages, `player ${player + 1}`));
+      .setText(getMessage(messages, `player ${Scene.TURN_ICONS[player].toUpperCase()}`));
   }
 
   runLength(x, y, xOffset, yOffset, origin) {

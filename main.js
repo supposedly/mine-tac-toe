@@ -21,10 +21,9 @@ const MINESWEEPER_MSGS = [
   "{loser}'s doin july 4th early this year",
   'mine your own sweepswax, {loser}',
   "you don't deserve a minesweeper pun, {loser}",
-  'a clean sweep… no miner defeat for {loser}',
-  'one small step for man\none big ol sweep for {loser}',
-  'X didnt mark the spot for {loser}',
-  '{loser} is great! player {LOSER } rocks! {loser} is the best player ever!'
+  'a miner loss for {loser}. a clean sweep for {loser}. do u hear those crickets {loser}',
+  'one small swep for {loser}… one giant sweep for {loser}kind',
+  '{loser} is great! {loser} rocks! player {LOSER } is the best player ever!'
 ];
 
 const TICTACTOE_MSGS = [
@@ -35,14 +34,14 @@ const TICTACTOE_MSGS = [
   '{loser} is great! player {LOSER } rocks! {loser} is the best player ever!'
 ];
 const TICTACTOE_EXTRAS = {
-  O: [
+  O: [  // shown to player X, defeated by O
     'R.K.O.O.O. outta nowhere, {loser}!',
     'is this lOOOss, {loser}?',
     '{loser} is Xout Xof Xorder lmao. wait wrong pun'
   ],
-  X: [
+  X: [  // shown to player O, defeated by X
     "{loser} got tentacion'd",
-    '{loser} oughta keep it 30, like the romans',
+    '{loser} better keep it 30, like the romans',
     '{loser} is Out Of Order lmao get it'
   ],
 };

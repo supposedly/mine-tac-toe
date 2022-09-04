@@ -46,13 +46,6 @@ const TICTACTOE_EXTRAS = {
   ],
 };
 
-
-function getMessage(messages, loser) {
-  const s = messages[Math.floor(Math.random() * messages.length)]
-    .replaceAll('{loser}', loser.toUpperCase());
-  return `${s}\xa0`; // for padding
-}
-
 function newArrayOf(length, callback) {
   return new Array(length).fill(null).map(callback);
 }
@@ -452,6 +445,12 @@ class Scene extends Phaser.Scene {
     this._setTurnText();
   }
 
+  getEndMessage(messages, loser) {
+    const s = messages[Math.floor(this.rng() * messages.length)]
+      .replaceAll('{loser}', loser.toUpperCase());
+    return `${s}\xa0`; // for padding
+  }
+
   gameWon(player, messages) {
     // prolly better ways to choose random number sans one value than this
     const choices = Array.from(
@@ -466,7 +465,7 @@ class Scene extends Phaser.Scene {
       .setColor(Scene.PLAYER_COLORS[winner])
       .setText(`PLAYER ${Scene.TURN_ICONS[winner].toUpperCase()} WINS`);
     this.otherGameOverMessage
-      .setText(getMessage(messages, Scene.TURN_ICONS[player].toUpperCase()));
+      .setText(this.getEndMessage(messages, Scene.TURN_ICONS[player].toUpperCase()));
   }
 
   runLength(x, y, xOffset, yOffset, origin) {

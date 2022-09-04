@@ -16,40 +16,40 @@ const Clicks = Object.freeze({
 
 
 const MINESWEEPER_MSGS = [
-  "{loser}'s a darmn minesleeper",
-  '{loser} got SWEPT',
-  "{loser}'s doin july 4th early this year",
-  'mine your own sweepswax, {loser}',
-  "you don't deserve a minesweeper pun, {loser}",
-  'a miner loss for {loser}. a clean sweep for {loser}. do u hear those crickets {loser}',
-  'one small swep for {loser}… one giant sweep for {loser}kind',
-  '{loser} is great! {loser} rocks! player {LOSER } is the best player ever!'
+  "player {loser}'s a darmn minesleeper",
+  'player {loser} got SWEPT',
+  "player {loser}'s doin july 4th early this year",
+  'mine your own sweepswax, player {loser}',
+  'player {loser} suffers a miner defeat. lmao actually a majer one',
+  'one small step for player {loser}… one big ol sweep for player {loser}kind',
+  'player {loser} is great! player {loser} rocks! player {LOSER } is the best player ever!'
 ];
 
 const TICTACTOE_MSGS = [
-  "{loser} tic'd when they shoulda tac'd",
-  '{loser} got tic-tac-told',
-  'tic tac go home, {loser}',
-  'learn ur tic tac tac tics, {loser}',
-  '{loser} is great! player {LOSER } rocks! {loser} is the best player ever!'
+  "player {loser} tic'd when they shoulda tac'd",
+  'player {loser} got tic-tac-told',
+  'tic tac go home, player {loser}',
+  'go tic tac ur tac tics, player {loser}',
+  'player {loser} is great! player {loser} rocks! player {LOSER } is the best player ever!'
 ];
 const TICTACTOE_EXTRAS = {
   O: [  // shown to player X, defeated by O
-    'R.K.O.O.O. outta nowhere, {loser}!',
-    'is this lOOOss, {loser}?',
-    '{loser} is Xout Xof Xorder lmao. wait wrong pun'
+    'R.K.O.O.O. outta nowhere, player {loser}!',
+    'is this lOOOss, player {loser}?',
+    'player {loser} did not mark the spot',
+    'player {loser} is Xout Xof Xorder lmao. wait wrong pun'
   ],
   X: [  // shown to player O, defeated by X
-    "{loser} got tentacion'd",
-    '{loser} better keep it 30, like the romans',
-    '{loser} is Out Of Order lmao get it'
+    "player {loser} got tentacion'd",
+    'player {loser} better keep it 30, like the romans',
+    'player {loser} is Out Of Order lmao get it'
   ],
 };
 
 
 function getMessage(messages, loser) {
   const s = messages[Math.floor(Math.random() * messages.length)]
-    .replaceAll('{loser}', loser);
+    .replaceAll('{loser}', loser.toUpperCase());
   return `${s}\xa0`; // for padding
 }
 
@@ -466,7 +466,7 @@ class Scene extends Phaser.Scene {
       .setColor(Scene.PLAYER_COLORS[winner])
       .setText(`PLAYER ${Scene.TURN_ICONS[winner].toUpperCase()} WINS`);
     this.otherGameOverMessage
-      .setText(getMessage(messages, `player ${Scene.TURN_ICONS[player].toUpperCase()}`));
+      .setText(getMessage(messages, Scene.TURN_ICONS[player].toUpperCase()));
   }
 
   runLength(x, y, xOffset, yOffset, origin) {

@@ -23,9 +23,9 @@ const MSGS = [
 ];
 
 const MINESWEEPER_MSGS = [
-  "player {loser}'s a darmn minesleeper",
+  "player {loser} is a darmn minesleeper",
   'player {loser} got SWEPT',
-  "player {loser}'s doin july 4th early this year",
+  "player {loser} did july 4th early this year",
   'mine your own sweepswax, player {loser}',
   'player {loser} suffers a miner defeat'
 ];
@@ -45,7 +45,7 @@ const TICTACTOE_EXTRAS = {
   ],
   X: [  // shown to player O, defeated by X
     "player {loser} got tentacion'd",
-    'player {loser} better keep it 30, like the romans',
+    'player {loser} oughta keep it 30, like the romans',
     'player {loser} is Xout Xof Xorder lmao. wait wrong pun'
   ],
 };

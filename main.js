@@ -14,35 +14,38 @@ const Clicks = Object.freeze({
   RIGHT: 2,
 });
 
+const MSGS = [
+  'do better, player {loser}. do better',
+  'player {loser} is still a wonderful person',
+  'player {loser} is NOT about to cry like a little baby. they are NOT',
+  'player {loser} is great! player {loser} rocks! player {LOSER } is the best player ever!'
+];
 
 const MINESWEEPER_MSGS = [
   "player {loser}'s a darmn minesleeper",
   'player {loser} got SWEPT',
   "player {loser}'s doin july 4th early this year",
   'mine your own sweepswax, player {loser}',
-  'player {loser} suffers a miner defeat. lmao actually a majer one',
-  'one small step for player {loser}… one big ol sweep for player {loser}kind',
-  'player {loser} is great! player {loser} rocks! player {LOSER } is the best player ever!'
+  'player {loser} suffers a miner defeat'
 ];
 
 const TICTACTOE_MSGS = [
   "player {loser} tic'd when they shoulda tac'd",
   'player {loser} got tic-tac-told',
   'tic tac go home, player {loser}',
-  'go tic tac ur tac tics, player {loser}',
-  'player {loser} is great! player {loser} rocks! player {LOSER } is the best player ever!'
+  'learn ur tic tac tac tics, player {loser}'
 ];
 const TICTACTOE_EXTRAS = {
   O: [  // shown to player X, defeated by O
     'R.K.O.O.O. outta nowhere, player {loser}!',
     'is this lOOOss, player {loser}?',
     'player {loser} did not mark the spot',
-    'player {loser} is Xout Xof Xorder lmao. wait wrong pun'
+    'player {loser} is Out Of Order lmao get it'
   ],
   X: [  // shown to player O, defeated by X
     "player {loser} got tentacion'd",
     'player {loser} better keep it 30, like the romans',
-    'player {loser} is Out Of Order lmao get it'
+    'player {loser} is Xout Xof Xorder lmao. wait wrong pun'
   ],
 };
 
@@ -525,7 +528,7 @@ class Scene extends Phaser.Scene {
       // XXX: below line is jaaaankkyyy
       const xo = tile.texture.key.charAt(0).toUpperCase();
       if (this.ticTacToeWin(tile)) {
-        this.gameWon(this.currentPlayer, TICTACTOE_MSGS.concat(TICTACTOE_EXTRAS[xo]));
+        this.gameWon(this.currentPlayer, MSGS.concat(TICTACTOE_MSGS).concat(TICTACTOE_EXTRAS[xo]));
       }
       if (this.allBombsFlagged()) {
         this.gameWon(
@@ -535,7 +538,7 @@ class Scene extends Phaser.Scene {
             (max, v, i, arr) => (v.size > arr[max].size ? max : i),
             0
           ),
-          MINESWEEPER_MSGS
+          MSGS.concat(MINESWEEPER_MSGS)
         );
       }
     }
@@ -573,7 +576,7 @@ class Scene extends Phaser.Scene {
     }
     if (oldState === -9) {
       // XXX: the +(!...) is bad bad baaaad
-      this.gameLost(this.currentPlayer, +(!this.currentPlayer), MINESWEEPER_MSGS);
+      this.gameLost(this.currentPlayer, +(!this.currentPlayer), MSGS.concat(MINESWEEPER_MSGS));
     }
     return true;
   }

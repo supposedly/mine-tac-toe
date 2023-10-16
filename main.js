@@ -18,7 +18,8 @@ const MSGS = [
   'do better, player {loser}. do better',
   'player {loser} is still a wonderful person',
   'player {loser} is NOT about to cry like a little baby. they are NOT',
-  'player {loser} is great! player {loser} rocks! player {LOSER } is the best player ever!'
+  'player {loser} is great! player {loser} rocks! player {LOSER } is the best player ever!',
+  'awful job, player {loser}'
 ];
 
 const MINESWEEPER_MSGS = [
@@ -33,7 +34,7 @@ const TICTACTOE_MSGS = [
   "player {loser} tic'd when they shoulda tac'd",
   'player {loser} got tic-tac-told',
   'tic tac go home, player {loser}',
-  'learn ur tic tac tac tics, player {loser}'
+  'check the tic tac tactics, player {loser}'
 ];
 const TICTACTOE_EXTRAS = {
   O: [  // shown to player X, defeated by O
